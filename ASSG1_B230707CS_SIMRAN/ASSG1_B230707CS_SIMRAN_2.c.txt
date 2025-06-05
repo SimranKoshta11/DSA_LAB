@@ -1,0 +1,159 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+struct bst{
+    int number;
+    char name[20];
+    int price;
+    struct bst *left;
+    struct bst *right;
+    struct bst *parent;
+};
+typedef struct bst* node;
+node Create_Node(int model_number,char model_name[],int price){
+    node temp=(node)malloc(sizeof(struct bst));
+    if(temp==NULL){
+        printf("Error\n");
+        exit(0);
+    }
+    temp->number=model_number;
+    strcpy(temp->name,model_name);
+    temp->price=price;
+    temp->left=NULL;
+    temp->right=NULL;
+    temp->parent=NULL;
+    return temp;
+}
+void Add(node *root,node x){
+    node z=*root;
+    node y=NULL;
+    while(z!=NULL){
+        y=z;
+        if(x->number<z->number)
+            z=z->left;
+        else
+            z=z->right;
+    }
+    x->parent=y;
+    if(y==NULL)
+        *root=x;
+    else if(x->number<y->number)
+        y->left=x;
+    else
+        y->right=x;
+}
+void transplant(node *root,node u,node v){
+    if(u->parent==NULL)
+        *root=v;
+    else if(u->number<u->parent->number)
+        u->parent->left=v;
+    else
+        u->parent->right=v;
+    if(v!=NULL)
+        v->parent=u->parent;
+}
+void Delete(node *root,node x){
+    if(x->left==NULL)
+        transplant(&(*root),x,x->right);
+    else if(x->right==NULL)
+        transplant(&(*root),x,x->left);
+    else{
+        node z=x->right;
+        while(z->left!=NULL){
+            z=z->left;
+        }
+        if(z->parent!=x){
+            transplant(&(*root),z,z->right);
+            z->right=x->right;
+            z->right->parent=z;
+        }
+        transplant(&(*root),x,z);
+        z->left=x->left;
+        z->left->parent=z;
+    }
+    free(x);
+}
+node Search(node root,int model_number){
+    while(root!=NULL && root->number!=model_number){
+        if(root->number>model_number)
+            root=root->left;
+        else
+            root=root->right;
+    }
+    return root;
+}
+void Inorder(node root){
+    if(root){
+        Inorder(root->left);
+        printf("%d %s %d\n",root->number,root->name,root->price);
+        Inorder(root->right);
+    }
+}
+void Preorder(node root){
+    if(root){
+        printf("%d %s %d\n",root->number,root->name,root->price);
+        Preorder(root->left);
+        Preorder(root->right);
+    }
+}
+void Postorder(node root){
+    if(root){
+        Postorder(root->left);
+        Postorder(root->right);
+        printf("%d %s %d\n",root->number,root->name,root->price);
+    }
+}
+void Modify(node *root,int model_number,int new_price){
+    node x=Search(*root,model_number);
+    if(x){
+        x->price=new_price;
+        printf("%d %s %d \n",x->number,x->name,x->price);
+    }
+    else{
+        printf("-1\n");
+    }
+}
+int main(){
+    node root=NULL,x;
+    char choice;
+    int model_number,model_price;
+    char model_name[20];
+    int new_price;
+    do{
+        scanf(" %c",&choice);
+        switch(choice){
+            case 'a':scanf("%d %s %d",&model_number,model_name,&model_price);
+                    x=Create_Node(model_number,model_name,model_price);
+                    Add(&root,x);
+                    break;
+            case 'd':scanf("%d",&model_number);
+                    x=Search(root,model_number);
+                    if(x){
+                        printf("%d %s %d \n",x->number,x->name,x->price);
+                        Delete(&root,x);
+                    }
+                    else
+                        printf("-1\n");
+                    break;
+            case 's':scanf("%d",&model_number);
+                    x=Search(root,model_number);
+                    if(x)
+                        printf("%d %s %d \n",x->number,x->name,x->price);
+                    else
+                        printf("-1\n");
+                    break;
+            case 'i':Inorder(root);
+                    //printf("\n");
+                    break;
+            case 'p':Preorder(root);
+                    //printf("\n");
+                    break;
+            case 't':Postorder(root);
+                    //printf("\n");
+                    break;
+            case 'm':scanf("%d %d",&model_number,&new_price);
+                    Modify(&root,model_number,new_price);
+                    break;
+        }
+    }while(choice!='e');
+}

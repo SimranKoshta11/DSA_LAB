@@ -1,0 +1,201 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+struct BinaryTree{
+    int data;
+    struct BinaryTree* left;
+    struct BinaryTree* right;
+};
+typedef struct BinaryTree* node;
+node Create_Node(int key){
+    node temp=(node)malloc(sizeof(struct BinaryTree));
+    if(temp==NULL){
+        printf("Error\n");
+        exit(0);
+    }
+    temp->data=key;
+    temp->left=NULL;
+    temp->right=NULL;
+    return temp;
+}
+int Search(int in[],int start,int end,int key){
+    int i;
+    for(i=start; i<=end; i++){
+        if(in[i]==key)
+            break;
+    }
+    return i;
+}
+node buildTree(int in[],int pre[],int start,int end){
+    static int preIndex=0;
+    if(start>end) return NULL;
+    node tNode=Create_Node(pre[preIndex++]);
+    if(start==end) return tNode;
+    int inIndex=Search(in,start,end,tNode->data);
+    tNode->left=buildTree(in,pre,start,inIndex-1);
+    tNode->right=buildTree(in,pre,inIndex+1,end);
+    return tNode;
+}
+int max(int a,int b){
+    return a>=b ? a: b;
+}
+struct QueueNode{
+    node tNode;
+    struct QueueNode *next;
+};
+typedef struct QueueNode* queuenode;
+
+struct que{
+    queuenode front;
+    queuenode rear;
+};
+typedef struct que* queue;
+queuenode Create_QueueNode(node tNode){
+    queuenode q=(queuenode)malloc(sizeof(struct QueueNode));
+    q->tNode=tNode;
+    q->next=NULL;
+    return q;
+}
+queue Create_Queue(){
+    queue q=(queue)malloc(sizeof(struct que));
+    q->front=NULL;
+    q->rear=NULL;
+    return q;
+}
+int isEmpty(queue q){
+    return q->front==NULL;
+}
+void enqueue(queue q,node tNode){
+    queuenode temp=Create_QueueNode(tNode);
+    if(q->rear==NULL){
+        q->front=q->rear=temp;
+        return;
+    }
+    q->rear->next=temp;
+    q->rear=temp;
+}
+
+node dequeue(queue q){
+    if(isEmpty(q)){
+        return NULL;
+    }
+    queuenode temp=q->front;
+    node treenode=temp->tNode;
+    q->front=q->front->next;
+    if(q->front==NULL) q->rear=NULL;
+    free(temp);
+    return treenode;
+}
+
+void PostOrder(node root){
+    if(root){
+        PostOrder(root->left);
+        PostOrder(root->right);
+        printf("%d ",root->data);
+    }
+}
+void ZigZag(node root){
+    if(!root) return ;
+    queue q=Create_Queue();
+    enqueue(q,root);
+    int leftToRight=0;
+    while(!isEmpty(q)){
+        int levelSize=0;
+        queuenode temp=q->front;
+        while(temp){
+            levelSize++;
+            temp=temp->next;
+        }
+        int* row=(int*)malloc(levelSize*sizeof(int));
+        for(int i=0; i<levelSize; i++){
+            node x=dequeue(q);
+            int index=leftToRight? i: levelSize-1-i;
+            row[index]=x->data;
+            if(x->left) enqueue(q,x->left);
+            if(x->right) enqueue(q,x->right);
+        }
+        leftToRight=!leftToRight;
+        for(int i=0; i<levelSize; i++){
+            printf("%d ",row[i]);
+        }
+        free(row);
+    }
+}
+void LevelMax(node root){
+    if(!root) return ;
+    queue q=Create_Queue();
+    enqueue(q,root);
+    while(!isEmpty(q)){
+        int levelSize=0;
+        queuenode temp=q->front;
+        while(temp){
+            levelSize++;
+            temp=temp->next;
+        }
+        int* row=(int*)malloc(levelSize*sizeof(int));
+        for(int i=0; i<levelSize; i++){
+            node x=dequeue(q);
+            row[i]=x->data;
+            if(x->left) enqueue(q,x->left);
+            if(x->right) enqueue(q,x->right);
+        }
+        int max1=row[0];
+        for(int i=1; i<levelSize; i++){
+            if(max1<row[i])
+                max1=row[i];
+        }
+        printf("%d ",max1);
+        free(row);
+    }
+}
+int Diameter(node root,int* maxi){
+    if(root==NULL)
+        return 0;
+    int lh=Diameter(root->left,maxi);
+    int rh=Diameter(root->right,maxi);
+    *maxi=max(*maxi,lh+rh+1);
+    return 1+max(lh,rh);
+}
+void RightLeafSum(node root,int *sum,int sure){
+    if(root==NULL) return ;
+    if(!root->left && !root->right && sure)
+        *sum=(*sum)+root->data;
+    else{
+        RightLeafSum(root->right,sum,1);
+        RightLeafSum(root->left,sum,0);
+    }
+}
+int main(){
+    char choice;
+    int n,sum,s,maxi;
+    node root=NULL;
+    scanf("%d",&n);
+    int in[n],pre[n];
+    for(int i=0; i<n; i++)
+        scanf("%d",&in[i]);
+    for(int i=0; i<n; i++)
+        scanf("%d",&pre[i]);
+    root=buildTree(in,pre,0,n-1);
+    do{
+        scanf(" %c",&choice);
+        switch(choice){
+            case 'p':PostOrder(root);
+                    printf("\n");
+                    break;
+            case 'z':ZigZag(root);
+                    printf("\n");
+                    break;
+            case 'm':LevelMax(root);
+                    printf("\n");
+                    break;
+            case 'd':maxi=0;
+                    s=Diameter(root,&maxi);
+                    printf("%d\n",maxi);
+                    break;
+            case 's':sum=0;
+                    RightLeafSum(root,&sum,0);
+                    printf("%d\n",sum);
+                    break;
+        }
+    }while(choice!='e');
+}
